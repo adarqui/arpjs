@@ -1,0 +1,22 @@
+{
+	"name": "arp",
+	"description": "some arp routines for node.js",
+	"main": "./arp",
+	"version": "0.0.1",
+	"author": "Andrew Darqui (http://github.com/adarqui)",
+	"repository": {
+		"type": "git",
+		"url": "http://github.com/adarqui/arp.git"
+	},
+	"licenses": [
+		{
+			"type": "MIT"
+		}
+	],
+	"bugs": {
+		"url" : "http://github.com/adarqui/arp/issues"
+	},
+	"dependencies": {
+		"assert" : "*"
+	}
+}
