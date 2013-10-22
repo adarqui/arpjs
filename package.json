@@ -17,6 +17,7 @@
 		"url" : "http://github.com/adarqui/arp/issues"
 	},
 	"dependencies": {
-		"assert" : "*"
+		"assert" : "*",
+		"vows" : "*"
 	}
 }
