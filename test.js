@@ -12,6 +12,12 @@ Arp.Show({ numeric : true }, function(err,js) {
 	console.log("err",err,"js",js);
 });
 
+Arp.Show({
+	interface : "eth0"
+}, function(err,js) {
+	console.log("err",err,"js",js);
+});
+
 Arp.Set({
 	address : "192.168.1.7",
 	interface : "eth0"
@@ -38,4 +44,8 @@ Arp.Set({
 	interface : "vlan0",
 }, function(err,data) {
 	console.log(err,data);
+});
+
+Arp.Flush({
+	interface : "wlan0"
 });
