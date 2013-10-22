@@ -15,6 +15,10 @@ var _Arp = function(opts) {
 			argv.push('--numeric');
 		}
 
+		if(opts.interface) {
+			argv.push('-i '+opts.interface);
+		}
+
 		if(opts.raw) {
 			/* Needs to trigger 'raw' mode
 			 * ie, for show, read /proc/net/arp. For add/del, use socket/ioctl
@@ -57,7 +61,7 @@ var _Arp = function(opts) {
 						hwaddress : parsed[2],
 						flags : parsed[3],
 						mask : parsed[4],
-						iface : parsed[5],
+						interface : parsed[5],
 					});
 				}
 			}
@@ -66,11 +70,18 @@ var _Arp = function(opts) {
 		});
 	}
 
-	Arp.Set = function(opts, cb) {
+	Arp.SetOrDel = function(type, opts, cb) {
 		var argv = [], syntax;
 
+		var tpl = {
+			sethw : "{bin} -s {address} {hw}",
+			setif : "{bin} -Ds {address} {interface}",
+			delif : "{bin} -i {interface} -d {address}",
+			delip : "{bin} -d {address}"
+		}
+
 		var set_throw_error = function(s) {
-			throw new Error("Arp.Set: ERROR => " + s);
+			throw new Error("Arp.SetOrDel: ERROR => " + s);
 			return;
 		}
 
@@ -82,10 +93,10 @@ var _Arp = function(opts) {
 			return set_throw_error("Provide an address & interface");
 		}
 
-//		argv.push(Private.bin).push('-Ds').push(opts.address).push(opts.interface);
 		/*
 		 * Can specify interface or hwaddr, not both
 		 */
+		/*
 		if(opts.interface && opts.hwaddr) {
 			return set_throw_error("Specify one or the other: hwaddr or interface");
 		}
@@ -99,16 +110,43 @@ var _Arp = function(opts) {
 			argv = argv.concat('netmask').concat(opts.netmask);
 		}
 		var syntax = argv.join(' ');
-		console.log("syntax", syntax);
+		*/
+
+		switch(type) {
+			case 'set' : {
+				if(opts.interface && opts.hwaddr) {
+					return set_throw_error("Specify one or the other: hwaddr or interface");
+				}
+				else if(opts.hwaddr) {
+					syntax = tpl.sethw.replace(/{bin}/g, Private.bin).replace(/{address}/g, opts.address).replace(/{hwaddr}/g, opts.hwaddr);
+				}
+				else if(opts.interface) {
+					syntax = tpl.setif.replace(/{bin}/g, Private.bin).replace(/{address}/g, opts.address).replace(/{interface}/g, opts.interface);
+				}
+				break;
+			}
+			case 'del' : {
+				if(opts.interface) {
+					syntax = tpl.delif.replace(/{bin}/g, Private.bin).replace(/{address}/g, opts.address).replace(/{interface}/g, opts.interface);
+				} else {
+					syntax = tpl.delip.replace(/{bin}/g, Private.bin).replace(/{address}/g, opts.address);
+				}
+				break;
+			}
+			default : {
+				return set_throw_error("Please specify set or del");
+				break;
+			}
+		}
+
 		Cproc.exec(syntax,function(err,stdout,stderr) {
-			console.log(syntax,"err,stdout,stderr",err,stdout,stderr);
 			var ret, channel
 			if(err || stderr.length > 0) {
-				ret = false;
-				channel = stdout;
-			} else {
 				ret = true;
 				channel = stderr;
+			} else {
+				ret = false;
+				channel = stdout;
 			}
 			cb(ret,channel);
 		});
@@ -116,10 +154,22 @@ var _Arp = function(opts) {
 
 	}
 
-	Arp.Del = function() {
+	Arp.Set = function(opts,cb) {
+		return Arp.SetOrDel("set",opts,cb);
 	}
 
-	Arp.Flush = function() {
+	Arp.Del = function(opts,cb) {
+		return Arp.SetOrDel("del",opts,cb);
+	}
+
+	Arp.Flush = function(opts) {
+		Arp.Show(opts, function(err,js) {
+			for(var v in js.entries) {
+				var arp_entry = js.entries[v];
+				console.log(arp_entry);
+				Arp.Del({ address : arp_entry.address, interface : arp_entry.interface }, function(err,dat) { } );
+			}
+		});
 	}
 
 	Private.LocateArp = function() {
